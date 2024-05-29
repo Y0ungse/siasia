@@ -1,7 +1,12 @@
 plugins {
-    alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsKotlinAndroid)
+    //alias(libs.plugins.androidApplication)
+    //alias(libs.plugins.jetbrainsKotlinAndroid)
+    id("com.android.application")
+    id("com.google.gms.google-services")  //구글서비스 추가
+    id("org.jetbrains.kotlin.android") version "1.9.0" apply true
+
 }
+
 
 android {
     namespace = "com.example.food_detect"
@@ -35,6 +40,7 @@ android {
     }
 }
 
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -45,4 +51,18 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    //implementation 'org.tensorflow:tensorflow-lite:2.4.0'
+
+    //implementation(libs.tensorflow.lite)
+    //implementation(libs.tensorflow.lite.gpu)
+    //implementation("com.google.firebase:firebase-database:32.3.1")
+
+    // Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+
+
+
 }

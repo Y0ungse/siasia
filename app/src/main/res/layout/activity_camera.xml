@@ -22,4 +22,14 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="32dp"/>
+    <TextView
+        android:id="@+id/tvResult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="결과 표시"
+        android:textSize="18sp"
+        android:layout_centerInParent="true"
+        android:layout_below="@id/imageView"
+        android:layout_marginTop="16dp" />
+
 </RelativeLayout>

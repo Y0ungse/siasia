@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
@@ -21,9 +22,17 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import org.tensorflow.lite.Interpreter
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.io.FileInputStream
+
+
 
 class CameraActivity : AppCompatActivity() {
     private lateinit var imageView: ImageView
+    private lateinit var interpreter: Interpreter
+
     private lateinit var currentPhotoPath: String
     private val REQUEST_IMAGE_CAPTURE = 1
     private val REQUEST_PERMISSIONS = 2
@@ -35,11 +44,28 @@ class CameraActivity : AppCompatActivity() {
         imageView = findViewById(R.id.imageView)
         val btnCamera: Button = findViewById(R.id.btnCamera)
 
+        // 모델 로드
+        try {
+            val model = loadModelFile()
+            interpreter = Interpreter(model)
+        } catch (e: IOException) {
+            Toast.makeText(this, "모델을 로드하지 못했습니다.", Toast.LENGTH_SHORT).show()
+        }
+
         btnCamera.setOnClickListener {
             if (checkPermissions()) {
                 dispatchTakePictureIntent()
             }
         }
+    }
+
+    private fun loadModelFile(): ByteBuffer {
+        val fileDescriptor = this.assets.openFd("model.tflite")
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel = inputStream.channel
+        val startOffset = fileDescriptor.startOffset
+        val declaredLength = fileDescriptor.declaredLength
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
     private fun checkPermissions(): Boolean {
@@ -122,7 +148,31 @@ class CameraActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
             val bitmap = BitmapFactory.decodeFile(currentPhotoPath)
-            imageView.setImageBitmap(bitmap)
+            val processedBitmap = Bitmap.createScaledBitmap(bitmap, 224, 224, true) // 모델에 맞는 크기로 조정
+            imageView.setImageBitmap(processedBitmap)
+
+            // 모델 실행 및 결과 처리
+            val result = runInference(processedBitmap)
+            displayResult(result)
         }
+    }
+
+    private fun runInference(bitmap: Bitmap): String {
+        // 모델에 입력할 배열 준비
+        val input = arrayOfNulls<Any>(1)
+        input[0] = bitmap
+
+        // 결과를 저장할 배열
+        val output = Array(1) { FloatArray(1) } // 결과가 라벨링된 카테고리 수만큼의 배열이어야 함
+
+        interpreter.run(input, output)
+        return output[0][0].toString() // 결과 해석
+    }
+
+    // CameraActivity에서 분석 결과(음식 이름)를 AllergyInfoActivity로 전달하고, 해당 액티비티에서 파이어베이스를 조회하여 알레르기 정보를 표시
+    private fun displayResult(foodName: String) {
+        val intent = Intent(this, CameraActivity_AllergyInfo::class.java)
+        intent.putExtra("foodName", foodName)
+        startActivity(intent)
     }
 }
